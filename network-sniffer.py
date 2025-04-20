@@ -98,11 +98,12 @@ def main():
             print(f"Using filter: {args.filter}")
         print(f"Capturing {args.count if args.count > 0 else '∞'} packets. Press Ctrl+C to stop.\n")
 
+        sniff_count = args.count if args.count > 0 else 0
         packets = sniff(
             iface=args.interface,
             filter=args.filter,
             prn=packet_callback,
-            count=args.count if args.count > 0 else None
+            count=sniff_count
         )
 
         # Save as PCAP
