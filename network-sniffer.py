@@ -4,79 +4,100 @@ import sys
 import time
 from datetime import datetime
 
-# Log packet details to a file
+# Log packet summary to a log file
 def log_packet_details(packet_details, filename="packet_capture.log"):
-    """Log packet details to a log file"""
     with open(filename, 'a') as log_file:
         log_file.write(f"{packet_details['timestamp']} - {packet_details['summary']}\n")
 
-# Extract packet details
+# Extract and structure packet details
 def get_packet_details(packet):
-    """Extract and return relevant details from a packet"""
     details = {
-        "timestamp": datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S.%f'),
+        "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'),
         "summary": packet.summary(),
         "length": len(packet),
-        "layers": [],
+        "layers": []
     }
-    
-    # Add layer information
+
+    # Add ARP Layer
     if ARP in packet:
         details["layers"].append({
             "type": "ARP",
-            "op": "Request" if packet[ARP].op == 1 else "Reply",
-            "src_mac": packet[ARP].hwsrc,
-            "src_ip": packet[ARP].psrc,
-            "dst_mac": packet[ARP].hwdst,
-            "dst_ip": packet[ARP].pdst
+            "Operation": "Request" if packet[ARP].op == 1 else "Reply",
+            "Source MAC": packet[ARP].hwsrc,
+            "Source IP": packet[ARP].psrc,
+            "Destination MAC": packet[ARP].hwdst,
+            "Destination IP": packet[ARP].pdst
         })
-    # Add more layers like IP, TCP, UDP, ICMP
-    # (Same as your previous code...)
+
+    # Add IP Layer
+    if IP in packet:
+        details["layers"].append({
+            "type": "IP",
+            "Source IP": packet[IP].src,
+            "Destination IP": packet[IP].dst,
+            "TTL": packet[IP].ttl
+        })
+
+    # Add TCP Layer
+    if TCP in packet:
+        details["layers"].append({
+            "type": "TCP",
+            "Source Port": packet[TCP].sport,
+            "Destination Port": packet[TCP].dport,
+            "Flags": packet[TCP].flags
+        })
+
+    # Add UDP Layer
+    if UDP in packet:
+        details["layers"].append({
+            "type": "UDP",
+            "Source Port": packet[UDP].sport,
+            "Destination Port": packet[UDP].dport
+        })
+
+    # Add ICMP Layer
+    if ICMP in packet:
+        details["layers"].append({
+            "type": "ICMP",
+            "Type": packet[ICMP].type,
+            "Code": packet[ICMP].code
+        })
 
     return details
 
-# Callback for processing each packet
+# Callback function for each captured packet
 def packet_callback(packet):
-    """Process each captured packet"""
     details = get_packet_details(packet)
-    
-    # Log the packet details to a file
     log_packet_details(details)
 
-    # Print packet information
-    print(f"\n{'='*80}")
-    print(f"TIME: {details['timestamp']}")
-    print(f"PACKET: {details['summary']}")
-    print(f"LENGTH: {details['length']} bytes")
+    print("\n" + "-"*60)
+    print(f"[Time]     {details['timestamp']}")
+    print(f"[Length]   {details['length']} bytes")
+    print(f"[Summary]  {details['summary']}")
 
-    # Print layer details
     for layer in details["layers"]:
-        layer_type = layer.pop("type")
-        print(f"\n[{layer_type} Layer]")
+        print(f"\n>> {layer['type']} Layer:")
         for key, value in layer.items():
-            print(f"  {key}: {value}")
+            if key != "type":
+                print(f"   {key}: {value}")
+    print("-"*60)
 
-    print(f"{'='*80}")
-
-# Main function to start the network sniffer
+# Main function
 def main():
-    """Main function to start the network sniffer"""
-    parser = argparse.ArgumentParser(description="Basic Network Packet Sniffer")
-    parser.add_argument("-i", "--interface", help="Network interface to capture packets from")
-    parser.add_argument("-c", "--count", type=int, default=0, help="Number of packets to capture (0 for infinite)")
-    parser.add_argument("-f", "--filter", default="", help="BPF filter to apply (e.g., 'tcp port 80')")
-    parser.add_argument("-e", "--export", choices=["csv", "json"], help="Export captured packets to CSV or JSON")
+    parser = argparse.ArgumentParser(description="Simple Network Packet Sniffer")
+    parser.add_argument("-i", "--interface", help="Interface to capture from")
+    parser.add_argument("-c", "--count", type=int, default=0, help="Number of packets to capture (0 = infinite)")
+    parser.add_argument("-f", "--filter", default="", help="Capture filter (e.g. 'tcp', 'icmp')")
+    parser.add_argument("-e", "--export", choices=["csv", "json"], help="Export packets to CSV or JSON")
 
     args = parser.parse_args()
 
     try:
-        print(f"Starting packet capture on {args.interface or 'default interface'}")
+        print(f"\nStarting capture on interface: {args.interface or 'default'}")
         if args.filter:
             print(f"Using filter: {args.filter}")
-        print(f"Capturing {args.count if args.count > 0 else 'infinite'} packets...")
-        print("Press Ctrl+C to stop capture\n")
+        print(f"Capturing {args.count if args.count > 0 else '∞'} packets. Press Ctrl+C to stop.\n")
 
-        # Capture packets
         packets = sniff(
             iface=args.interface,
             filter=args.filter,
@@ -84,30 +105,37 @@ def main():
             count=args.count if args.count > 0 else None
         )
 
-        # Save packets to a file
-        timestamp = int(time.time())
-        filename = f"captured_packets_{timestamp}.pcap"
+        # Save as PCAP
+        filename = f"captured_packets_{int(time.time())}.pcap"
         wrpcap(filename, packets)
-        print(f"\nSaved {len(packets)} packets to {filename}")
+        print(f"\n✅ Saved {len(packets)} packets to: {filename}")
 
-        # Export packets to CSV or JSON if selected
+        # Export to CSV or JSON
         if args.export == "csv":
             export_to_csv(packets)
-            print(f"Exported packets to captured_packets.csv")
+            print("✅ Exported packets to captured_packets.csv")
         elif args.export == "json":
             export_to_json(packets)
-            print(f"Exported packets to captured_packets.json")
+            print("✅ Exported packets to captured_packets.json")
 
     except KeyboardInterrupt:
-        print("\nPacket capture stopped by user")
+        print("\n🛑 Capture stopped by user.")
         sys.exit(0)
     except PermissionError:
-        print("\nError: Insufficient permissions. Try running with sudo/administrator privileges.")
+        print("\n🚫 Permission Denied. Run with sudo.")
         sys.exit(1)
     except Exception as e:
-        print(f"\nError: {str(e)}")
+        print(f"\n❌ Error: {e}")
         sys.exit(1)
 
-# Run the script
+# Optional export functions (placeholder if needed)
+def export_to_csv(packets):
+    # Add export to CSV logic here
+    pass
+
+def export_to_json(packets):
+    # Add export to JSON logic here
+    pass
+
 if __name__ == "__main__":
     main()
