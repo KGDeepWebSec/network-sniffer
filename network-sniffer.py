@@ -29,6 +29,30 @@ def log_packet_details(packet_details, filename="packet_capture.log"):
     """Log packet details to a log file"""
     with open(filename, 'a') as log_file:
         log_file.write(f"{packet_details['timestamp']} - {packet_details['summary']}\n")
+        def packet_callback(packet):
+    """Process each captured packet"""
+    
+    # Get packet details
+    details = get_packet_details(packet)
+    
+    # Log the packet details to a file
+    log_packet_details(details)
+
+    # Print packet information
+    print(f"\n{'='*80}")
+    print(f"TIME: {details['timestamp']}")
+    print(f"PACKET: {details['summary']}")
+    print(f"LENGTH: {details['length']} bytes")
+
+    # Print layer details
+    for layer in details["layers"]:
+        layer_type = layer.pop("type")
+        print(f"\n[{layer_type} Layer]")
+        for key, value in layer.items():
+            print(f"  {key}: {value}")
+
+    print(f"{'='*80}")
+
         
 def get_packet_details(packet):
     """Extract and return relevant details from a packet"""
