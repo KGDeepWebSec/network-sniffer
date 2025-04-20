@@ -88,6 +88,7 @@ def packet_callback(packet):
 
 def main():
     """Main function to start the network sniffer"""
+
     parser = argparse.ArgumentParser(description="Basic Network Packet Sniffer")
     parser.add_argument("-i", "--interface", help="Network interface to capture packets from")
     parser.add_argument("-c", "--count", type=int, default=0, 
@@ -96,6 +97,37 @@ def main():
                         help="BPF filter to apply (e.g., 'tcp port 80')")
 
     args = parser.parse_args()
+
+    try:
+        print(f"Starting packet capture on {args.interface or 'default interface'}")
+        if args.filter:
+            print(f"Using filter: {args.filter}")
+        print(f"Capturing {args.count if args.count > 0 else 'infinite'} packets...")
+        print("Press Ctrl+C to stop capture\n")
+
+        # Capture and store packets
+        packets = sniff(
+            iface=args.interface,
+            filter=args.filter,
+            prn=packet_callback,
+            count=args.count if args.count > 0 else None
+        )
+
+        # Save packets to a file
+        timestamp = int(time.time())
+        filename = f"captured_packets_{timestamp}.pcap"
+        wrpcap(filename, packets)
+        print(f"\nSaved {len(packets)} packets to {filename}")
+
+    except KeyboardInterrupt:
+        print("\nPacket capture stopped by user")
+        sys.exit(0)
+    except PermissionError:
+        print("\nError: Insufficient permissions. Try running with sudo/administrator privileges.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\nError: {str(e)}")
+        sys.exit(1)
 
     try:
         print(f"Starting packet capture on {args.interface or 'default interface'}")
