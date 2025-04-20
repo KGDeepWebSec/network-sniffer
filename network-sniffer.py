@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Basic Network Sniffer - A simple tool to capture and analyze network packets
-
-
 import argparse
 from scapy.all import sniff, IP, TCP, UDP, ICMP, ARP, wrpcap
 import sys
@@ -65,7 +60,7 @@ def packet_callback(packet):
 
 # Main function to start the network sniffer
 def main():
-    """ Main function to start the network sniffer """
+    """Main function to start the network sniffer"""
     parser = argparse.ArgumentParser(description="Basic Network Packet Sniffer")
     parser.add_argument("-i", "--interface", help="Network interface to capture packets from")
     parser.add_argument("-c", "--count", type=int, default=0, help="Number of packets to capture (0 for infinite)")
