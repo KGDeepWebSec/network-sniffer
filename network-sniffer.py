@@ -7,6 +7,22 @@ from scapy.all import sniff, IP, TCP, UDP, ICMP, ARP, wrpcap
 import sys
 import time
 from datetime import datetime
+import csv
+import json
+
+# Export to CSV
+def export_to_csv(packets, filename="captured_packets.csv"):
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Timestamp', 'Source IP', 'Destination IP', 'Protocol', 'Length'])
+        for packet in packets:
+            writer.writerow([packet['timestamp'], packet['src'], packet['dst'], packet['proto'], packet['length']])
+
+# Export to JSON
+def export_to_json(packets, filename="captured_packets.json"):
+    with open(filename, 'w') as file:
+        json.dump(packets, file, indent=4)
+
 
 captured_packets = []  # Store captured packets for saving
 
