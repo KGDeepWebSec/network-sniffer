@@ -151,6 +151,59 @@ def main():
             print(f"Using filter: {args.filter}")
         print(f"Capturing {args.count if args.count > 0 else 'infinite'} packets...")
         print("Press Ctrl+C to stop capture\n")
+        def main():
+    """Main function to start the network sniffer"""
+
+    parser = argparse.ArgumentParser(description="Basic Network Packet Sniffer")
+    parser.add_argument("-i", "--interface", help="Network interface to capture packets from")
+    parser.add_argument("-c", "--count", type=int, default=0, 
+                        help="Number of packets to capture (0 for infinite)")
+    parser.add_argument("-f", "--filter", default="", 
+                        help="BPF filter to apply (e.g., 'tcp port 80')")
+    parser.add_argument("-e", "--export", choices=["csv", "json"], 
+                        help="Export captured packets to CSV or JSON")
+
+    args = parser.parse_args()
+
+    try:
+        print(f"Starting packet capture on {args.interface or 'default interface'}")
+        if args.filter:
+            print(f"Using filter: {args.filter}")
+        print(f"Capturing {args.count if args.count > 0 else 'infinite'} packets...")
+        print("Press Ctrl+C to stop capture\n")
+
+        # Capture and store packets
+        packets = sniff(
+            iface=args.interface,
+            filter=args.filter,
+            prn=packet_callback,
+            count=args.count if args.count > 0 else None
+        )
+
+        # Save packets to a file
+        timestamp = int(time.time())
+        filename = f"captured_packets_{timestamp}.pcap"
+        wrpcap(filename, packets)
+        print(f"\nSaved {len(packets)} packets to {filename}")
+
+        # Export packets to CSV or JSON if selected
+        if args.export == "csv":
+            export_to_csv(packets)
+            print(f"Exported packets to captured_packets.csv")
+        elif args.export == "json":
+            export_to_json(packets)
+            print(f"Exported packets to captured_packets.json")
+
+    except KeyboardInterrupt:
+        print("\nPacket capture stopped by user")
+        sys.exit(0)
+    except PermissionError:
+        print("\nError: Insufficient permissions. Try running with sudo/administrator privileges.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\nError: {str(e)}")
+        sys.exit(1)
+
 
         # Start packet capture
         sniff(
