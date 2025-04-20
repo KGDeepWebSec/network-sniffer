@@ -25,7 +25,11 @@ def export_to_json(packets, filename="captured_packets.json"):
 
 
 captured_packets = []  # Store captured packets for saving
-
+def log_packet_details(packet_details, filename="packet_capture.log"):
+    """Log packet details to a log file"""
+    with open(filename, 'a') as log_file:
+        log_file.write(f"{packet_details['timestamp']} - {packet_details['summary']}\n")
+        
 def get_packet_details(packet):
     """Extract and return relevant details from a packet"""
     details = {
@@ -106,6 +110,8 @@ def main():
     """Main function to start the network sniffer"""
 
     parser = argparse.ArgumentParser(description="Basic Network Packet Sniffer")
+    parser.add_argument("-e", "--export", choices=["csv", "json"], 
+                    help="Export captured packets to CSV or JSON")
     parser.add_argument("-i", "--interface", help="Network interface to capture packets from")
     parser.add_argument("-c", "--count", type=int, default=0, 
                         help="Number of packets to capture (0 for infinite)")
